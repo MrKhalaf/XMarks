@@ -1,0 +1,10 @@
+{
+  "extension_name": {
+    "message": "X Bookmarks Only",
+    "description": "The name of the extension"
+  },
+  "extension_description": {
+    "message": "Restricts X.com to only bookmarks during focus hours (7am-10pm, except 1:30pm-3pm break)",
+    "description": "The description of the extension"
+  }
+}
