@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "X Bookmarks Only",
-  "version": "1.0",
-  "description": "Restricts X.com to only bookmarks during focus hours",
+  "name": "XMarks",
+  "version": "1.1",
+  "description": "Restricts X.com to bookmarks and your profile during focus hours",
   "permissions": [
     "activeTab",
     "scripting",
-    "webNavigation"
+    "webNavigation",
+    "storage"
   ],
   "host_permissions": [
     "*://x.com/*",
@@ -22,6 +23,10 @@
       "run_at": "document_start"
     }
   ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "icons": {
     "48": "images/icon-48.png",
     "96": "images/icon-96.png",

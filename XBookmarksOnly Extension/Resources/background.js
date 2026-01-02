@@ -1,15 +1,36 @@
-// X Bookmarks Only - Background Service Worker
-// Restricts x.com to bookmarks only during focus hours
+// XMarks - Background Service Worker
+// Restricts x.com to bookmarks and your profile during focus hours
 
 const BOOKMARKS_URL = "https://x.com/i/bookmarks";
 
 // Focus hours configuration
-// Restricted: 7:00 AM - 10:00 PM (22:00)
-// Break (unrestricted): 1:30 PM - 3:00 PM (13:30 - 15:00)
-const FOCUS_START = { hour: 7, minute: 0 };    // 7:00 AM
-const FOCUS_END = { hour: 22, minute: 0 };     // 10:00 PM
-const BREAK_START = { hour: 13, minute: 30 };  // 1:30 PM
-const BREAK_END = { hour: 15, minute: 0 };     // 3:00 PM
+const FOCUS_START = { hour: 7, minute: 0 };
+const FOCUS_END = { hour: 22, minute: 0 };
+const BREAK_START = { hour: 13, minute: 30 };
+const BREAK_END = { hour: 15, minute: 0 };
+
+// Cache for username
+let cachedUsername = null;
+
+// Load username from storage
+async function loadUsername() {
+  try {
+    const result = await browser.storage.local.get("username");
+    cachedUsername = result.username || null;
+  } catch (e) {
+    cachedUsername = null;
+  }
+}
+
+// Listen for storage changes
+browser.storage.onChanged.addListener((changes) => {
+  if (changes.username) {
+    cachedUsername = changes.username.newValue || null;
+  }
+});
+
+// Initial load
+loadUsername();
 
 function timeToMinutes(hour, minute) {
   return hour * 60 + minute;
@@ -24,17 +45,13 @@ function isWithinFocusHours() {
   const breakStartMinutes = timeToMinutes(BREAK_START.hour, BREAK_START.minute);
   const breakEndMinutes = timeToMinutes(BREAK_END.hour, BREAK_END.minute);
 
-  // Check if within focus hours (7am-10pm)
   const inFocusHours = currentMinutes >= focusStartMinutes && currentMinutes < focusEndMinutes;
-
-  // Check if within break time (1:30pm-3pm)
   const inBreakTime = currentMinutes >= breakStartMinutes && currentMinutes < breakEndMinutes;
 
-  // Return true if in focus hours AND not in break time
   return inFocusHours && !inBreakTime;
 }
 
-function isBookmarksPage(url) {
+function isAllowedPage(url) {
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname;
@@ -43,15 +60,26 @@ function isBookmarksPage(url) {
     // Check if it's x.com or twitter.com
     if (hostname !== "x.com" && hostname !== "twitter.com" &&
         hostname !== "www.x.com" && hostname !== "www.twitter.com") {
-      return true; // Not X, allow it
+      return true;
     }
 
-    // Allow bookmarks page and its sub-paths
+    // Allow bookmarks page
     if (pathname.startsWith("/i/bookmarks")) {
       return true;
     }
 
-    // Allow necessary API/resource paths for bookmarks to work
+    // Allow user's profile if configured
+    if (cachedUsername) {
+      const profilePath = "/" + cachedUsername.toLowerCase();
+      const currentPath = pathname.toLowerCase();
+
+      // Allow exact profile match or profile subpages
+      if (currentPath === profilePath || currentPath.startsWith(profilePath + "/")) {
+        return true;
+      }
+    }
+
+    // Allow necessary API/resource paths
     if (pathname.startsWith("/i/api") ||
         pathname.startsWith("/sw.js") ||
         pathname.startsWith("/manifest.json")) {
@@ -65,12 +93,11 @@ function isBookmarksPage(url) {
 }
 
 function shouldRedirect(url) {
-  return isWithinFocusHours() && !isBookmarksPage(url);
+  return isWithinFocusHours() && !isAllowedPage(url);
 }
 
 // Handle navigation events
 browser.webNavigation.onBeforeNavigate.addListener((details) => {
-  // Only handle main frame navigation
   if (details.frameId !== 0) return;
 
   if (shouldRedirect(details.url)) {
@@ -83,7 +110,7 @@ browser.webNavigation.onBeforeNavigate.addListener((details) => {
   ]
 });
 
-// Handle URL changes within the same page (SPA navigation)
+// Handle SPA navigation
 browser.webNavigation.onHistoryStateUpdated.addListener((details) => {
   if (details.frameId !== 0) return;
 
@@ -97,7 +124,4 @@ browser.webNavigation.onHistoryStateUpdated.addListener((details) => {
   ]
 });
 
-// Log when extension loads
-console.log("X Bookmarks Only extension loaded");
-console.log("Focus hours: 7:00 AM - 10:00 PM");
-console.log("Break time: 1:30 PM - 3:00 PM");
+console.log("XMarks extension loaded");

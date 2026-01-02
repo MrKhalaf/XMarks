@@ -1,4 +1,4 @@
-// X Bookmarks Only - Content Script
+// XMarks - Content Script
 // Handles client-side navigation and link clicks
 
 const BOOKMARKS_URL = "https://x.com/i/bookmarks";
@@ -8,6 +8,23 @@ const FOCUS_START = { hour: 7, minute: 0 };
 const FOCUS_END = { hour: 22, minute: 0 };
 const BREAK_START = { hour: 13, minute: 30 };
 const BREAK_END = { hour: 15, minute: 0 };
+
+// Cached username
+let cachedUsername = null;
+
+// Load username from storage
+browser.storage.local.get("username").then((result) => {
+  cachedUsername = result.username || null;
+}).catch(() => {
+  cachedUsername = null;
+});
+
+// Listen for storage changes
+browser.storage.onChanged.addListener((changes) => {
+  if (changes.username) {
+    cachedUsername = changes.username.newValue || null;
+  }
+});
 
 function timeToMinutes(hour, minute) {
   return hour * 60 + minute;
@@ -28,26 +45,40 @@ function isWithinFocusHours() {
   return inFocusHours && !inBreakTime;
 }
 
-function isBookmarksPath(pathname) {
-  return pathname.startsWith("/i/bookmarks");
+function isAllowedPath(pathname) {
+  // Allow bookmarks
+  if (pathname.startsWith("/i/bookmarks")) {
+    return true;
+  }
+
+  // Allow user's profile if configured
+  if (cachedUsername) {
+    const profilePath = "/" + cachedUsername.toLowerCase();
+    const currentPath = pathname.toLowerCase();
+
+    if (currentPath === profilePath || currentPath.startsWith(profilePath + "/")) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function shouldBlock() {
   const pathname = window.location.pathname;
-  return isWithinFocusHours() && !isBookmarksPath(pathname);
+  return isWithinFocusHours() && !isAllowedPath(pathname);
 }
 
-// Redirect if not on bookmarks page during focus hours
 function checkAndRedirect() {
   if (shouldBlock()) {
     window.location.replace(BOOKMARKS_URL);
   }
 }
 
-// Initial check
-checkAndRedirect();
+// Initial check (with small delay to allow storage to load)
+setTimeout(checkAndRedirect, 100);
 
-// Monitor for SPA navigation (X uses client-side routing)
+// Monitor for SPA navigation
 let lastUrl = location.href;
 const observer = new MutationObserver(() => {
   if (location.href !== lastUrl) {
@@ -61,7 +92,7 @@ observer.observe(document.documentElement, {
   childList: true
 });
 
-// Also listen for popstate (back/forward navigation)
+// Listen for popstate (back/forward navigation)
 window.addEventListener("popstate", checkAndRedirect);
 
 // Intercept link clicks
@@ -74,12 +105,12 @@ document.addEventListener("click", (e) => {
   const href = link.getAttribute("href");
   if (!href) return;
 
-  // Check if it's an internal X link that's not bookmarks
-  if (href.startsWith("/") && !href.startsWith("/i/bookmarks")) {
+  // Check if it's an internal X link that's not allowed
+  if (href.startsWith("/") && !isAllowedPath(href)) {
     e.preventDefault();
     e.stopPropagation();
     window.location.replace(BOOKMARKS_URL);
   }
 }, true);
 
-console.log("X Bookmarks Only content script loaded");
+console.log("XMarks content script loaded");

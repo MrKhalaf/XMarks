@@ -1,6 +1,6 @@
 # XMarks
 
-A Safari extension that restricts X.com to only the bookmarks page during focus hours.
+A Safari extension that restricts X.com to bookmarks and your profile during focus hours.
 
 ## Schedule
 
@@ -15,7 +15,11 @@ A Safari extension that restricts X.com to only the bookmarks page during focus 
 3. Build and run (Cmd+R)
 4. Enable in Safari > Settings > Extensions
 
-## Customization
+## Configuration
+
+After installing, right-click the extension icon in Safari and select "Settings" to add your X username. This allows you to access your own profile in addition to bookmarks.
+
+## Customizing Hours
 
 Edit the time constants in `background.js` and `content.js`:
 
