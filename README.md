@@ -1,27 +1,32 @@
 # XMarks
 
-A Safari extension that restricts X.com to bookmarks and your profile during focus hours.
+Safari extension that limits X.com to just bookmarks + your profile during work hours.
 
-## Schedule
+## Quick Start
 
-- **Restricted:** 7:00 AM – 10:00 PM (redirects to bookmarks)
-- **Break:** 1:30 PM – 3:00 PM (full access)
-- **Off hours:** 10:00 PM – 7:00 AM (full access)
+```bash
+git clone https://github.com/MrKhalaf/XMarks.git
+cd XMarks
+open XBookmarksOnly/XBookmarksOnly.xcodeproj
+```
 
-## Installation
+1. **Sign it** — Click `XBookmarksOnly` in sidebar → Signing & Capabilities → Select your Apple ID for both targets
+2. **Build** — Press `Cmd+R`
+3. **Enable** — Safari → Settings → Extensions → Check XMarks
+4. **Configure** — Right-click extension icon → Settings → Add your @handle
 
-1. Open the Xcode project in `XBookmarksOnly/`
-2. Sign with your Apple ID (Signing & Capabilities > Team)
-3. Build and run (Cmd+R)
-4. Enable in Safari > Settings > Extensions
+## Default Schedule
 
-## Configuration
+| Time | Access |
+|------|--------|
+| 7am–1:30pm | Bookmarks + profile only |
+| 1:30pm–3pm | Full access (break) |
+| 3pm–10pm | Bookmarks + profile only |
+| 10pm–7am | Full access |
 
-After installing, right-click the extension icon in Safari and select "Settings" to add your X username. This allows you to access your own profile in addition to bookmarks.
+## Customize Hours
 
-## Customizing Hours
-
-Edit the time constants in `background.js` and `content.js`:
+Edit `XBookmarksOnly Extension/Resources/background.js`:
 
 ```javascript
 const FOCUS_START = { hour: 7, minute: 0 };
@@ -29,3 +34,9 @@ const FOCUS_END = { hour: 22, minute: 0 };
 const BREAK_START = { hour: 13, minute: 30 };
 const BREAK_END = { hour: 15, minute: 0 };
 ```
+
+Then rebuild in Xcode.
+
+## License
+
+MIT
